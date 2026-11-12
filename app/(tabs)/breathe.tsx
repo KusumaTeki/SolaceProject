@@ -1,0 +1,7 @@
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '@/theme/colors';
+export default function BreatheScreen() {
+  return <SafeAreaView style={styles.page}><Text style={styles.label}>A PAUSE FOR YOU</Text><Text style={styles.title}>Find your breath</Text><Text style={styles.copy}>A few unhurried moments can help you come back to the present.</Text><View style={styles.orbit}><View style={styles.core}><Text style={styles.breath}>inhale{ '\n' }softly</Text></View></View><Text style={styles.hint}>Your guided breathing session is coming in the next phase.</Text></SafeAreaView>;
+}
+const styles = StyleSheet.create({ page: { flex: 1, backgroundColor: colors.canvas, padding: 24, paddingTop: 46, alignItems: 'flex-start' }, label: { color: colors.muted, letterSpacing: 1.5, fontSize: 10, fontWeight: '700' }, title: { color: colors.ink, fontSize: 32, marginTop: 12, fontWeight: '500' }, copy: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: 9 }, orbit: { alignSelf: 'center', marginTop: 48, width: 210, height: 210, borderRadius: 105, backgroundColor: '#E8EDE4', alignItems: 'center', justifyContent: 'center' }, core: { width: 148, height: 148, borderRadius: 74, backgroundColor: '#D8E1D2', alignItems: 'center', justifyContent: 'center' }, breath: { color: colors.forest, fontSize: 18, lineHeight: 25, textAlign: 'center' }, hint: { alignSelf: 'center', textAlign: 'center', color: colors.muted, fontSize: 12, marginTop: 26, maxWidth: 250, lineHeight: 18 } });
