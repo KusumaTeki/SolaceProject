@@ -1,15 +1,13 @@
 import { useMemo, useRef } from 'react';
 import { PanResponder, StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme/colors';
+import { intensityAtPosition } from '@/features/mood/moodUtils';
 
 export function IntensitySlider({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   const track = useRef<React.ElementRef<typeof View>>(null);
   const bounds = useRef({ x: 0, width: 1 });
   const measure = () => track.current?.measureInWindow((x, _y, width) => { bounds.current = { x, width: Math.max(width, 1) }; });
-  const updateFromPageX = (pageX: number) => {
-    const ratio = Math.max(0, Math.min(1, (pageX - bounds.current.x) / bounds.current.width));
-    onChange(Math.max(1, Math.min(10, Math.round(ratio * 9) + 1)));
-  };
+  const updateFromPageX = (pageX: number) => onChange(intensityAtPosition(pageX, bounds.current.x, bounds.current.width));
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > Math.abs(gesture.dy),
@@ -18,7 +16,7 @@ export function IntensitySlider({ value, onChange }: { value: number; onChange: 
   }), []);
 
   return <View style={styles.container}>
-    <View ref={track} collapsable={false} onLayout={measure} {...panResponder.panHandlers} accessibilityRole="adjustable" accessibilityLabel="Mood intensity" accessibilityValue={{ min: 1, max: 10, now: value }} style={styles.touchTarget}>
+    <View ref={track} collapsable={false} onLayout={measure} {...panResponder.panHandlers} accessibilityRole="adjustable" accessibilityLabel="Mood intensity" accessibilityValue={{ min: 1, max: 10, now: value }} accessibilityActions={[{ name: 'increment', label: 'Increase intensity' }, { name: 'decrement', label: 'Decrease intensity' }]} onAccessibilityAction={({ nativeEvent }) => onChange(Math.max(1, Math.min(10, value + (nativeEvent.actionName === 'increment' ? 1 : -1))))} style={styles.touchTarget}>
       <View style={styles.track}><View style={[styles.fill, { width: `${((value - 1) / 9) * 100}%` }]} /><View style={[styles.thumb, { left: `${((value - 1) / 9) * 100}%` }]} /></View>
     </View>
     <View style={styles.labels}><Text style={styles.label}>A little</Text><Text style={styles.value}>{value}<Text style={styles.outOf}> / 10</Text></Text><Text style={styles.label}>A lot</Text></View>

@@ -1,4 +1,4 @@
-import { moodOptions, type MoodEntry } from '@/features/mood/types';
+import type { MoodEntry } from '@/features/mood/types';
 
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();
@@ -13,7 +13,10 @@ export function fromDateKey(dateKey: string): Date {
 }
 
 export function getMoodLabel(moodId: MoodEntry['mood']): string {
-  return moodOptions.find((mood) => mood.id === moodId)?.label ?? 'Mood';
+  const labels: Record<MoodEntry['mood'], string> = {
+    joyful: 'Joyful', calm: 'Calm', okay: 'Okay', anxious: 'Anxious', low: 'Low', overwhelmed: 'Overwhelmed',
+  };
+  return labels[moodId] ?? 'Mood';
 }
 
 export function getMonthCells(year: number, month: number): Array<{ dateKey: string; day: number } | null> {
@@ -30,6 +33,12 @@ export function getMonthCells(year: number, month: number): Array<{ dateKey: str
 export function averageIntensity(entries: MoodEntry[]): number | null {
   if (!entries.length) return null;
   return Math.round(entries.reduce((sum, entry) => sum + entry.intensity, 0) / entries.length);
+}
+
+export function intensityAtPosition(pageX: number, trackLeft: number, trackWidth: number): number {
+  if (!Number.isFinite(pageX) || !Number.isFinite(trackLeft) || trackWidth <= 0) return 1;
+  const ratio = Math.max(0, Math.min(1, (pageX - trackLeft) / trackWidth));
+  return Math.round(ratio * 9) + 1;
 }
 
 export function getLastSevenDays(entries: MoodEntry[], now = new Date()) {

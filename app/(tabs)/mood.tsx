@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { ArrowLeft, ArrowRight, Check, CloudSun, Heart, Info, Save } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Check, CloudSun, Heart, Info } from 'lucide-react-native';
 import { AppButton } from '@/components/AppButton';
 import { Screen } from '@/components/Screen';
 import { Surface } from '@/components/Surface';
@@ -34,12 +34,14 @@ export default function MoodScreen() {
   const [saveError, setSaveError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
 
-  useEffect(() => {
-    getMoodEntries()
-      .then(setEntries)
-      .catch(() => setLoadError('Your saved check-ins could not be loaded. Please close and reopen this screen.'))
-      .finally(() => setLoading(false));
+  const reloadEntries = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try { setEntries(await getMoodEntries()); }
+    catch { setLoadError('Your saved check-ins could not be loaded. Please try again.'); }
+    finally { setLoading(false); }
   }, []);
+  useEffect(() => { void reloadEntries(); }, [reloadEntries]);
 
   const monthCells = useMemo(() => getMonthCells(visibleMonth.getFullYear(), visibleMonth.getMonth()), [visibleMonth]);
   const entriesByDate = useMemo(() => {
@@ -133,12 +135,12 @@ export default function MoodScreen() {
     </Surface>
 
     {!!savedMessage && <View accessibilityRole="alert" style={styles.success}><View style={styles.successIcon}><Check size={14} color={colors.forestDeep} /></View><Text style={styles.successText}>{savedMessage}</Text></View>}
-    {!!loadError && <View style={styles.errorBox}><Info size={16} color={colors.danger} /><Text style={styles.errorText}>{loadError}</Text></View>}
+    {!!loadError && <View style={styles.errorBox}><Info size={16} color={colors.danger} /><Text style={styles.errorText}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void reloadEntries()} hitSlop={8}><Text style={styles.retryText}>Try again</Text></Pressable></View>}
 
     <View style={styles.sectionHeading}><View><Text style={styles.sectionLabel}>A GENTLE LOOK BACK</Text><Text style={styles.sectionTitle}>Your week</Text></View><Text style={styles.weeklyAvg}>{weeklyAverage === null ? '—' : `${weeklyAverage}/10`}</Text></View>
     <Surface style={styles.trendCard}>
       <View style={styles.trendHeading}><Text style={styles.cardTitle}>Mood intensity</Text><Text style={styles.trendLegend}>DAILY AVERAGE</Text></View>
-      {weekEntries.length === 0 ? <View style={styles.chartEmpty}><View style={styles.emptyGlyph}><CloudSun size={20} color={colors.forest} /></View><Text style={styles.emptyTitle}>Your week will take shape here</Text><Text style={styles.emptyCopy}>Save a check-in and your mood pattern will appear.</Text></View> : <>
+      {loading || loadError || weekEntries.length === 0 ? <View style={styles.chartEmpty}><View style={styles.emptyGlyph}><CloudSun size={20} color={colors.forest} /></View><Text style={styles.emptyTitle}>{loading ? 'Loading your week' : loadError ? 'Your week is unavailable' : 'Your week will take shape here'}</Text><Text style={styles.emptyCopy}>{loading ? 'Gathering your recent check-ins…' : loadError ? 'Try loading your check-ins again.' : 'Save a check-in and your mood pattern will appear.'}</Text></View> : <>
         <View style={styles.chart} accessibilityLabel="Daily average mood intensity for the last seven days, from one to ten">
           {trend.map((day, index) => <View key={day.dateKey} style={styles.chartColumn}>
             <View style={styles.chartBarSpace}>
@@ -174,7 +176,7 @@ export default function MoodScreen() {
     </Surface>
 
     <View style={styles.selectedDayHeading}><Text style={styles.selectedDayTitle}>{selectedDateFormatter.format(fromDateKey(selectedDateKey))}</Text>{selectedDateKey === todayKey && <Text style={styles.todayPill}>TODAY</Text>}</View>
-    {loading ? <Surface style={styles.historyEmpty}><Text style={styles.emptyCopy}>Loading your private check-ins…</Text></Surface> : selectedEntries.length === 0 ? <Surface style={styles.historyEmpty}>
+    {loading ? <Surface style={styles.historyEmpty}><Text style={styles.emptyCopy}>Loading your private check-ins…</Text></Surface> : loadError ? <Surface style={styles.historyEmpty}><Text style={styles.emptyTitle}>History is unavailable</Text><Text style={styles.emptyCopy}>Try loading your check-ins again.</Text></Surface> : selectedEntries.length === 0 ? <Surface style={styles.historyEmpty}>
       <View style={styles.emptyGlyph}><Heart size={18} color={colors.peachInk} /></View><Text style={styles.emptyTitle}>A quiet day</Text><Text style={styles.emptyCopy}>No check-ins saved for this date.</Text>
     </Surface> : <View style={styles.entryList}>
       {selectedEntries.map((entry) => {
@@ -199,7 +201,7 @@ const styles = StyleSheet.create({
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, moodChoice: { width: '31%', minHeight: 77, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, paddingVertical: 8, position: 'relative' }, pressed: { opacity: 0.8 }, moodEmoji: { fontSize: 21, marginBottom: 4 }, moodLabel: { color: colors.ink, fontSize: 10, fontWeight: '600' }, selectedCheck: { position: 'absolute', top: 5, right: 5, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   validation: { color: colors.danger, fontSize: 11, lineHeight: 16, marginTop: 9 }, intensityHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 20 }, fieldTitle: { color: colors.ink, fontSize: 12, fontWeight: '600' }, intensityHint: { color: colors.muted, fontSize: 9 },
   noteHeading: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 21, marginBottom: 8 }, optional: { color: colors.muted, fontSize: 8, letterSpacing: 1.1, fontWeight: '600' }, noteInput: { minHeight: 76, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.canvas, paddingHorizontal: 12, paddingVertical: 11, color: colors.ink, fontSize: 12, lineHeight: 18 }, charCount: { alignSelf: 'flex-end', color: colors.muted, fontSize: 9, marginTop: 4, marginBottom: 12 },
-  errorText: { color: colors.danger, fontSize: 11, lineHeight: 16, flex: 1 }, success: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 12, paddingHorizontal: 13, paddingVertical: 11, borderRadius: 14, backgroundColor: colors.sage }, successIcon: { width: 23, height: 23, borderRadius: 12, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }, successText: { color: colors.forestDeep, fontSize: 11, fontWeight: '500', flex: 1 }, errorBox: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 12, marginTop: 12, borderRadius: 13, backgroundColor: '#F7EAE7' },
+  errorText: { color: colors.danger, fontSize: 11, lineHeight: 16, flex: 1 }, retryText: { color: colors.forestDeep, fontSize: 10, fontWeight: '700' }, success: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 12, paddingHorizontal: 13, paddingVertical: 11, borderRadius: 14, backgroundColor: colors.sage }, successIcon: { width: 23, height: 23, borderRadius: 12, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }, successText: { color: colors.forestDeep, fontSize: 11, fontWeight: '500', flex: 1 }, errorBox: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 12, marginTop: 12, borderRadius: 13, backgroundColor: '#F7EAE7' },
   sectionHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 27, marginBottom: 11 }, sectionLabel: { color: colors.muted, fontSize: 8, letterSpacing: 1.3, fontWeight: '700' }, sectionTitle: { color: colors.ink, fontSize: 20, lineHeight: 26, fontWeight: '500', marginTop: 4 }, weeklyAvg: { color: colors.forest, fontSize: 14, fontWeight: '700', paddingBottom: 3 },
   trendCard: { padding: 16 }, trendHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, cardTitle: { color: colors.ink, fontSize: 13, fontWeight: '600' }, trendLegend: { color: colors.muted, fontSize: 7, letterSpacing: 1, fontWeight: '700' }, chart: { flexDirection: 'row', height: 116, marginTop: 6 }, chartColumn: { flex: 1, alignItems: 'center' }, chartBarSpace: { height: 88, width: '100%', justifyContent: 'flex-end', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.line }, chartBar: { width: 17, maxWidth: '65%', minHeight: 7, borderTopLeftRadius: 7, borderTopRightRadius: 7, backgroundColor: '#C7D6C4' }, chartBarToday: { backgroundColor: colors.forest }, chartDay: { color: '#9A9D93', fontSize: 9, marginTop: 8 }, chartDayToday: { color: colors.forest, fontWeight: '700' }, trendFoot: { flexDirection: 'row', justifyContent: 'space-between', borderTopColor: colors.line, borderTopWidth: 1, paddingTop: 10, marginTop: 1 }, trendFootnote: { color: colors.muted, fontSize: 9 }, entryCount: { color: colors.forest, fontSize: 9, fontWeight: '600' }, chartEmpty: { alignItems: 'center', paddingTop: 19, paddingBottom: 12 }, emptyGlyph: { width: 37, height: 37, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sage, marginBottom: 8 }, emptyTitle: { color: colors.ink, fontSize: 12, fontWeight: '600', textAlign: 'center' }, emptyCopy: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 4 },
   historyTotal: { color: colors.muted, fontSize: 10, paddingBottom: 5 }, calendarCard: { paddingHorizontal: 12, paddingVertical: 13 }, monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 7, marginBottom: 8 }, monthArrow: { width: 32, height: 32, borderRadius: 12, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center' }, monthTitle: { color: colors.ink, fontSize: 13, fontWeight: '600' }, calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' }, weekday: { width: `${100 / 7}%`, height: 30, textAlign: 'center', textAlignVertical: 'center', color: colors.muted, fontSize: 9, fontWeight: '600' }, dayCell: { width: `${100 / 7}%`, height: 41, alignItems: 'center', justifyContent: 'center', borderRadius: 13, position: 'relative' }, daySelected: { backgroundColor: colors.forest }, dayToday: { borderColor: colors.forest, borderWidth: 1 }, dayNumber: { color: colors.ink, fontSize: 11 }, dayNumberSelected: { color: colors.white, fontWeight: '700' }, dayNumberToday: { color: colors.forest, fontWeight: '700' }, dayDot: { position: 'absolute', bottom: 5, width: 4, height: 4, borderRadius: 2, backgroundColor: colors.peachInk }, dayDotSelected: { backgroundColor: colors.white },

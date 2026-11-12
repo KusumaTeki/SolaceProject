@@ -7,9 +7,10 @@ Solace is a React Native and Expo wellness companion. The first phase establishe
 ```text
 app/                 Expo Router routes and tab navigation
 src/theme/           Shared design tokens
-src/components/      Reusable visual building blocks (next phase)
-src/features/        Onboarding, mood, chat, journal, mindfulness, insights, habits
-src/services/        API clients and persistence adapters
+src/components/      Reusable visual building blocks
+src/features/mood/   Emotion choices, intensity control, calendar, trend, local storage
+src/features/        Chat, journal, mindfulness, insights, habits (later phases)
+src/services/        Profile storage and future API clients
 server/              Express API, MongoDB models, AI service, safety middleware
 ```
 
@@ -24,6 +25,7 @@ The mobile app will call a REST API. Groq credentials belong only in the Node se
 - `react-native-reanimated`: the animation foundation for later breathing and transition interactions.
 - `expo-status-bar`: status bar styling.
 - `@react-native-async-storage/async-storage`: saves onboarding choices locally on the device.
+- `react-native-web`: optional browser preview of the same Expo routes.
 - `typescript`, `@types/react`: TypeScript authoring and checking.
 
 ## Run on Windows
@@ -39,6 +41,8 @@ npm run start
 Press `a` in the Expo terminal for an Android emulator, or scan the QR code with Expo Go. This starter targets the current Expo SDK. Expo Go must support the SDK installed by `npm install`.
 
 On first launch, onboarding selections and the optional reminder preference are saved on the device. The reminder is a saved preference only; notification delivery is not configured in Phase 1. The dashboard mood graph is clearly marked preview data.
+
+Mood check-ins are stored locally with the date, selected emotion, 1–10 intensity, optional note, and timestamp. The mood screen’s calendar and seven-day intensity trend are calculated from those saved entries.
 
 For browser preview, install Expo's web peers and start the web target:
 
